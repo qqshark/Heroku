@@ -942,7 +942,7 @@ def get_named_platform() -> str:
     if main.IS_DOCKER:
         return "🐳 Docker"
 
-    return f"✌️ lavHost {os.environ['LAVHOST']}" if main.IS_LAVHOST else "💎 VDS"
+    return f"✌️ lavHost {os.environ['LAVHOST']}" if main.IS_LAVHOST else "<emoji document_id=5357489424177327912>🦈</emoji> SharkHost"
 
 
 def get_platform_emoji() -> str:
@@ -1285,7 +1285,7 @@ def get_commit_url() -> str:
     """
     try:
         hash_ = get_git_hash()
-        return f'<a href="https://github.com/coddrago/Heroku/commit/{hash_}">#{hash_[:7]}</a>'
+        return f'<a href="https://github.com/qqshark/Heroku/commit/{hash_}">#{hash_[:7]}</a>'
     except Exception:
         return "Unknown"
 
@@ -1585,7 +1585,7 @@ def get_git_info() -> typing.Tuple[str, str]:
     hash_ = get_git_hash()
     return (
         hash_,
-        f"https://github.com/coddrago/Heroku/commit/{hash_}" if hash_ else "",
+        f"https://github.com/qqshark/Heroku/commit/{hash_}" if hash_ else "",
     )
 
 

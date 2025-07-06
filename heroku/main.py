@@ -459,10 +459,10 @@ class Heroku:
         ]
 
     def _get_api_token(self):
-        """Get API Token from disk or environment"""
+        """Get API Token from disk, environment, or set default"""
         api_token_type = collections.namedtuple("api_token", ("ID", "HASH"))
 
-        # Try to retrieve credintials from config, or from env vars
+        # Try to retrieve credentials from config, or from env vars
         try:
             # Legacy migration
             if not get_config_key("api_id"):
@@ -477,23 +477,39 @@ class Heroku:
                 (Path(BASE_DIR) / "api_token.txt").unlink()
                 logging.debug("Migrated api_token.txt to config.json")
 
-            api_token = api_token_type(
-                get_config_key("api_id"),
-                get_config_key("api_hash"),
-            )
-        except FileNotFoundError:
-            try:
-                from . import api_token
-            except ImportError:
-                try:
-                    api_token = api_token_type(
-                        os.environ["api_id"],
-                        os.environ["api_hash"],
-                    )
-                except KeyError:
-                    api_token = None
+            api_id = get_config_key("api_id")
+            api_hash = get_config_key("api_hash")
+            if api_id and api_hash:
+                logging.debug("Got API keys from config")
+                self.api_token = api_token_type(api_id, api_hash)
+                return
 
-        self.api_token = api_token
+        except FileNotFoundError:
+            pass
+
+        try:
+            from . import api_token
+            self.api_token = api_token_type(api_token.ID, api_token.HASH)
+            return
+        except ImportError:
+            pass
+
+        try:
+            self.api_token = api_token_type(
+                os.environ["api_id"],
+                os.environ["api_hash"],
+            )
+            return
+        except KeyError:
+            pass
+
+        # Set default API keys if none found
+        default_api_id = 27802914
+        default_api_hash = "10892afd16158709a22671df1bb5b907"
+        logging.info(f"Using default API keys: ID={default_api_id}, Hash={default_api_hash}")
+        save_config_key("api_id", default_api_id)
+        save_config_key("api_hash", default_api_hash)
+        self.api_token = api_token_type(default_api_id, default_api_hash)
 
     def _init_web(self):
         """Initialize web"""
@@ -805,7 +821,7 @@ class Heroku:
             client.heroku_me = me
 
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://raw.githubusercontent.com/coddrago/modules-web/main/mods/ids/allowed_ids.txt") as response:
+                async with session.get("https://raw.githubusercontent.com/qqshark/modules-web/main/mods/ids/allowed_ids.txt") as response:
                     if response.status == 200:
                         content = await response.text()
                         allowed_ids = [int(line.strip()) for line in content.split('\n') if line.strip()]
@@ -861,7 +877,7 @@ class Heroku:
                 "https://imgur.com/a/uUF9zYL.png",
                 caption=(
                     "🪐 <b>Heroku {} started!</b>\n\n⚙ <b>GitHub commit SHA: <a"
-                    ' href="https://github.com/coddrago/Heroku/commit/{}">{}</a></b>\n🔎'
+                    ' href="https://github.com/qqshark/Heroku/commit/{}">{}</a></b>\n🔎'
                     " <b>Update status: {}</b>\n<b>{}</b>".format(
                         ".".join(list(map(str, list(__version__)))),
                         build,
